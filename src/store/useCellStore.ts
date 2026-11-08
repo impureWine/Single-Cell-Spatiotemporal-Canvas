@@ -11,12 +11,14 @@ interface CellState {
   pseudotimeRange: [number, number]
   showVelocityParticles: boolean
   particleSpeed: number
+  particleDensity: number
   setSelectedCellIds: (ids: Iterable<string>) => void
   setActiveTool: (tool: ToolMode) => void
   setColorBy: (mode: ColorByMode) => void
   setPseudotimeRange: (range: [number, number]) => void
   toggleVelocityParticles: () => void
   setParticleSpeed: (speed: number) => void
+  setParticleDensity: (density: number) => void
   resetView: () => void
 }
 
@@ -28,6 +30,7 @@ function viewDefaults() {
     pseudotimeRange: [0, 1] as [number, number],
     showVelocityParticles: false,
     particleSpeed: 1,
+    particleDensity: 1000,
   }
 }
 
@@ -49,6 +52,11 @@ export const useCellStore = create<CellState>()((set) => ({
   })),
   setParticleSpeed: (speed) => {
     if (Number.isFinite(speed)) set({ particleSpeed: Math.max(0, speed) })
+  },
+  setParticleDensity: (density) => {
+    if (Number.isFinite(density)) {
+      set({ particleDensity: Math.max(100, Math.min(1000, Math.round(density / 50) * 50)) })
+    }
   },
   resetView: () => set(viewDefaults()),
 }))

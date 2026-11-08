@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useCellStore } from '../../store/useCellStore'
 import type { CellCluster, CellRecord, ColorByMode } from '../../types/cell'
 import { getClusterColor, getGeneExpressionColor, getPseudotimeColor } from '../../utils/colorScale'
+import VelocityCanvas from './VelocityCanvas'
 
 const GENES = ['Sox9', 'Neurog3', 'Ins1', 'Gcg'] as const
 const COLOR_MODES = ['pseudotime', 'cluster', ...GENES] as const
@@ -23,14 +24,14 @@ function modeLabel(mode: ColorByMode) {
   return mode
 }
 
-function ColorLegend({ mode, maximum }: { mode: ColorByMode; maximum: number }) {
+function ColorLegend({ mode, maximum, stacked }: { mode: ColorByMode; maximum: number; stacked: boolean }) {
   const gradient = [0, 0.5, 1].map((stop) => {
     const rgb = mode === 'pseudotime' ? getPseudotimeColor(stop).slice(0, 3) : getGeneExpressionColor(stop, 1)
     return `rgb(${rgb.join(', ')}) ${stop * 100}%`
   }).join(', ')
 
   return (
-    <figure aria-label={`${modeLabel(mode)} color legend`} className="pointer-events-none absolute bottom-3 right-3 z-10 max-w-[calc(100%_-_1.5rem)] rounded-lg border border-lab-line bg-white/95 px-3 py-2 text-xs shadow-lab">
+    <figure aria-label={`${modeLabel(mode)} color legend`} className={`pointer-events-none absolute right-3 z-10 max-w-[calc(100%_-_1.5rem)] rounded-lg border border-lab-line bg-white/95 px-3 py-2 text-xs shadow-lab ${stacked ? 'bottom-14' : 'bottom-3'}`}>
       <figcaption className="mb-1 font-medium">{modeLabel(mode)}</figcaption>
       {mode === 'cluster' ? (
         <ul className="grid grid-cols-2 gap-x-3 gap-y-1">
@@ -111,19 +112,21 @@ export default function UmapViewport({ resetVersion }: { resetVersion: number })
     const element = container.current
     if (!element) return
 
-    const observer = new ResizeObserver(([entry]) => {
-      setSize({ width: entry.contentRect.width, height: entry.contentRect.height })
+    const observer = new ResizeObserver(() => {
+      setSize({ width: element.clientWidth, height: element.clientHeight })
     })
     observer.observe(element)
     return () => observer.disconnect()
   }, [])
 
-  const viewState: OrthographicViewState = camera?.version === resetVersion ? camera.state : {
+  const stacked = width < 540
+  const viewState = useMemo<OrthographicViewState>(() => camera?.version === resetVersion ? camera.state : {
     target: [0, 0, 0],
-    zoom: Math.log2(Math.max(1, Math.min((width - 48) / 17, (height - 190) / 11))),
+    zoom: Math.log2(Math.max(1, Math.min((width - 48) / 17, (height - (stacked ? 250 : 190)) / 11))),
+    padding: stacked ? { bottom: 36 } : undefined,
     minZoom: -1,
     maxZoom: 9,
-  }
+  }, [camera, height, resetVersion, stacked, width])
 
   const maxima = useMemo(() => {
     const result: GeneMaxima = { Sox9: 0, Neurog3: 0, Ins1: 0, Gcg: 0 }
@@ -168,16 +171,21 @@ export default function UmapViewport({ resetVersion }: { resetVersion: number })
   return (
     <div ref={container} className="absolute inset-0 overflow-hidden" onPointerLeave={() => setHover(null)}>
       {width > 0 && height > 0 && (
-        <DeckGL
-          views={VIEW}
-          viewState={viewState}
-          layers={layers}
-          onHover={handleHover}
-          onViewStateChange={({ viewState: nextState }) => {
-            setHover(null)
-            setCamera({ version: resetVersion, state: nextState })
-          }}
-        />
+        <>
+          <DeckGL
+            width={width}
+            height={height}
+            views={VIEW}
+            viewState={viewState}
+            layers={layers}
+            onHover={handleHover}
+            onViewStateChange={({ viewState: nextState }) => {
+              setHover(null)
+              setCamera({ version: resetVersion, state: nextState })
+            }}
+          />
+          <VelocityCanvas viewState={viewState} width={width} height={height} />
+        </>
       )}
       <div className="absolute right-3 top-14 z-20 flex items-center gap-2 rounded-full border border-lab-line bg-white/85 px-3 py-1 text-xs shadow-lab backdrop-blur-md">{/* taste-skill-ignore: required frosted color control */}
         <label htmlFor="umap-color-by" className="text-lab-muted">Color by</label>
@@ -190,7 +198,7 @@ export default function UmapViewport({ resetVersion }: { resetVersion: number })
           {COLOR_MODES.map((mode) => <option key={mode} value={mode}>{modeLabel(mode)}</option>)}
         </select>
       </div>
-      <ColorLegend mode={colorBy} maximum={maximum} />
+      <ColorLegend mode={colorBy} maximum={maximum} stacked={stacked} />
       {hover && <CellTooltip hover={hover} maxima={maxima} width={width} height={height} />}
     </div>
   )
