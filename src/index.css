@@ -1,0 +1,22 @@
+/* filepath: src/index.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-lab-canvas font-sans text-lab-ink tabular-nums;
+  }
+
+  button:focus-visible {
+    @apply outline outline-2 outline-offset-2 outline-lab-muted;
+  }
+}
+
+@layer utilities {
+  .bg-lab-grid {
+    background-color: theme('colors.lab.canvas');
+    background-image: radial-gradient(theme('colors.lab.dot') 1px, transparent 1px); /* taste-skill-ignore: required lab dot grid */
+    background-size: 20px 20px;
+  }
+}

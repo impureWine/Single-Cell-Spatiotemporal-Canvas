@@ -1,0 +1,4 @@
+# filepath: .gitignore
+node_modules/
+dist/
+.taste-skill/
