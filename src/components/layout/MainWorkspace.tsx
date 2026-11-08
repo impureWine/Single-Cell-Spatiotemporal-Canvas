@@ -20,7 +20,7 @@ export default function MainWorkspace({ timelineOpen, onToggleTimeline }: MainWo
             <h2 id={id} className="absolute left-3 right-auto top-3 max-w-[calc(100%_-_1.5rem)] rounded-full border border-[#E2E8F0] bg-white/85 px-3 py-1.5 text-xs font-medium shadow-lab backdrop-blur-md">{/* taste-skill-ignore: required frosted viewport caption */}
               {title}
             </h2>
-            <p className="px-3 pt-10 text-center text-xs text-lab-muted">等待载入细胞数据</p>
+            <p className="px-3 pt-10 text-center text-xs text-lab-muted">等待视口渲染</p>
           </section>
         ))}
       </div>

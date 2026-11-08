@@ -1,5 +1,6 @@
 // filepath: src/components/layout/TopHeader.tsx
 import { Download, RotateCcw, Workflow } from 'lucide-react'
+import { useCellStore } from '../../store/useCellStore'
 
 interface TopHeaderProps {
   onReset: () => void
@@ -8,6 +9,19 @@ interface TopHeaderProps {
 const actionClass = 'inline-flex h-8 items-center gap-1.5 rounded px-2 text-xs hover:bg-lab-canvas disabled:opacity-50'
 
 export default function TopHeader({ onReset }: TopHeaderProps) {
+  const totalCount = useCellStore((state) => state.cells.length)
+  const selectedCount = useCellStore((state) => state.selectedCellIds.size)
+  const resetView = useCellStore((state) => state.resetView)
+  const metrics = [
+    { label: '总细胞数', count: totalCount },
+    { label: '选中细胞数', count: selectedCount },
+  ]
+
+  function handleReset() {
+    resetView()
+    onReset()
+  }
+
   return (
     <header className="grid shrink-0 grid-cols-2 items-center gap-2 border-b border-lab-line bg-lab-panel px-3 py-2 lg:h-12 lg:grid-cols-[1fr_auto_1fr] lg:py-0">
       <div className="col-span-2 flex flex-wrap items-center gap-x-3 gap-y-1 lg:col-span-1">
@@ -21,16 +35,16 @@ export default function TopHeader({ onReset }: TopHeaderProps) {
       </div>
 
       <dl className="flex w-fit divide-x divide-lab-line rounded border border-lab-line text-xs">
-        {['总细胞数', '选中细胞数'].map((label) => (
+        {metrics.map(({ label, count }) => (
           <div key={label} className="flex flex-col gap-x-2 px-2 py-1 sm:flex-row">
             <dt className="whitespace-nowrap text-lab-muted">{label}</dt>
-            <dd aria-label="暂无数据">—</dd>
+            <dd>{count.toLocaleString('zh-CN')}</dd>
           </div>
         ))}
       </dl>
 
       <div className="flex justify-end whitespace-nowrap">
-        <button type="button" className={actionClass} onClick={onReset}>
+        <button type="button" className={actionClass} onClick={handleReset}>
           <RotateCcw size={14} aria-hidden="true" />
           视图复位
         </button>
