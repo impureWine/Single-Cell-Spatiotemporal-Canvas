@@ -7,6 +7,7 @@ import { useCellStore } from '../../store/useCellStore'
 import type { CellCluster, CellRecord, ColorByMode } from '../../types/cell'
 import { getClusterColor, getGeneExpressionColor, getPseudotimeColor } from '../../utils/colorScale'
 import VelocityCanvas from './VelocityCanvas'
+import BrushOverlay from './BrushOverlay'
 
 const GENES = ['Sox9', 'Neurog3', 'Ins1', 'Gcg'] as const
 const COLOR_MODES = ['pseudotime', 'cluster', ...GENES] as const
@@ -14,6 +15,7 @@ const CLUSTERS: CellCluster[] = ['Ductal', 'Ngn3_low_EP', 'Ngn3_high_EP', 'Pre_e
 const CLUSTER_COLORS = Object.fromEntries(CLUSTERS.map((cluster) => [cluster, getClusterColor(cluster)])) as
   Record<CellCluster, ReturnType<typeof getClusterColor>>
 const VIEW = new OrthographicView({ id: 'umap', flipY: false, controller: { inertia: 180 } })
+const BRUSH_VIEW = VIEW.clone({ controller: false })
 const FADED_COLOR: [number, number, number, number] = [203, 213, 225, 45]
 const DOT_RADIUS = 2.4
 const getPosition = (cell: CellRecord): [number, number] => [cell.umapX, cell.umapY]
@@ -101,6 +103,7 @@ export default function UmapViewport({ resetVersion }: { resetVersion: number })
   const colorBy = useCellStore((state) => state.colorBy)
   const setColorBy = useCellStore((state) => state.setColorBy)
   const selectedIds = useCellStore((state) => state.selectedCellIds)
+  const activeTool = useCellStore((state) => state.activeTool)
   const [timeStart, timeEnd] = useCellStore((state) => state.pseudotimeRange)
 
   const container = useRef<HTMLDivElement>(null)
@@ -127,6 +130,8 @@ export default function UmapViewport({ resetVersion }: { resetVersion: number })
     minZoom: -1,
     maxZoom: 9,
   }, [camera, height, resetVersion, stacked, width])
+  const view = activeTool === 'pan' ? VIEW : BRUSH_VIEW
+  const brushViewport = activeTool === 'pan' ? null : view.makeViewport({ width, height, viewState })
 
   const maxima = useMemo(() => {
     const result: GeneMaxima = { Sox9: 0, Neurog3: 0, Ins1: 0, Gcg: 0 }
@@ -175,7 +180,7 @@ export default function UmapViewport({ resetVersion }: { resetVersion: number })
           <DeckGL
             width={width}
             height={height}
-            views={VIEW}
+            views={view}
             viewState={viewState}
             layers={layers}
             onHover={handleHover}
@@ -185,6 +190,9 @@ export default function UmapViewport({ resetVersion }: { resetVersion: number })
             }}
           />
           <VelocityCanvas viewState={viewState} width={width} height={height} />
+          {activeTool !== 'pan' && brushViewport && (
+            <BrushOverlay key={`${activeTool}-${resetVersion}-${width}-${height}`} mode={activeTool} viewport={brushViewport} cells={cells} getPosition={getPosition} />
+          )}
         </>
       )}
       <div className="absolute right-3 top-14 z-20 flex items-center gap-2 rounded-full border border-lab-line bg-white/85 px-3 py-1 text-xs shadow-lab backdrop-blur-md">{/* taste-skill-ignore: required frosted color control */}
@@ -199,7 +207,7 @@ export default function UmapViewport({ resetVersion }: { resetVersion: number })
         </select>
       </div>
       <ColorLegend mode={colorBy} maximum={maximum} stacked={stacked} />
-      {hover && <CellTooltip hover={hover} maxima={maxima} width={width} height={height} />}
+      {activeTool === 'pan' && hover && <CellTooltip hover={hover} maxima={maxima} width={width} height={height} />}
     </div>
   )
 }
