@@ -5,7 +5,7 @@ import { DeckGL } from '@deck.gl/react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useCellStore } from '../../store/useCellStore'
 import type { CellCluster, CellRecord } from '../../types/cell'
-import { getClusterColor } from '../../utils/colorScale'
+import { getClusterColor, getGeneExpressionColor } from '../../utils/colorScale'
 import BrushOverlay from './BrushOverlay'
 
 const PAN_VIEW = new OrthographicView({ id: 'spatial', flipY: false, controller: { inertia: 180 } })
@@ -78,6 +78,7 @@ export default function SpatialViewport({ resetVersion }: { resetVersion: number
   const cells = useCellStore((state) => state.cells)
   const selected = useCellStore((state) => state.selectedCellIds)
   const activeTool = useCellStore((state) => state.activeTool)
+  const colorBy = useCellStore((state) => state.colorBy)
   const [start, end] = useCellStore((state) => state.pseudotimeRange)
   const container = useRef<HTMLDivElement>(null)
   const [{ width, height }, setSize] = useState({ width: 0, height: 0 })
@@ -100,6 +101,9 @@ export default function SpatialViewport({ resetVersion }: { resetVersion: number
     return () => observer.disconnect()
   }, [])
 
+  const gene = colorBy === 'cluster' || colorBy === 'pseudotime' ? null : colorBy
+  const maximum = useMemo(() => gene ? cells.reduce((max, cell) => Math.max(max, cell.genes[gene]), 0) : 0, [cells, gene])
+
   const layers = useMemo(() => {
     const highlight = selected.size > 0 || start > 0 || end < 1
     const matches = (cell: CellRecord) =>
@@ -112,13 +116,16 @@ export default function SpatialViewport({ resetVersion }: { resetVersion: number
       radiusUnits: 'pixels',
       getPosition,
       getRadius: (cell) => highlight && matches(cell) ? 2.75 : 2.2,
-      getFillColor: (cell) => matches(cell) ? COLORS.get(cell.cluster)!.rgb : FADED,
+      getFillColor: (cell) => {
+        if (!matches(cell)) return FADED
+        return gene ? getGeneExpressionColor(cell.genes[gene], maximum) : COLORS.get(cell.cluster)!.rgb
+      },
       updateTriggers: {
         getRadius: [selected, start, end],
-        getFillColor: [selected, start, end],
+        getFillColor: [selected, start, end, gene, maximum],
       },
     })]
-  }, [cells, end, selected, start])
+  }, [cells, end, gene, maximum, selected, start])
 
   const pixelsPerUnit = viewport ? Math.abs(viewport.project([1, 0])[0] - viewport.project([0, 0])[0]) : 0
   const microns = [100, 50, 20, 10, 5, 2, 1].find((value) => value / MICRONS_PER_UNIT * pixelsPerUnit <= width / 3) ?? 1

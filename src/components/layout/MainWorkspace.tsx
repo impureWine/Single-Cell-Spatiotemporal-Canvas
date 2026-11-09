@@ -2,6 +2,7 @@
 import { ChevronDown } from 'lucide-react'
 import UmapViewport from '../canvas/UmapViewport'
 import SpatialViewport from '../canvas/SpatialViewport'
+import PseudotimeDock from '../dock/PseudotimeDock'
 
 const viewports = [
   { id: 'viewport-a', title: 'VIEWPORT A · Spatial Tissue Slice' },
@@ -32,15 +33,15 @@ export default function MainWorkspace({ timelineOpen, umapResetVersion, onToggle
         ))}
       </div>
 
-      <section aria-labelledby="timeline-heading" className={`shrink-0 border-t border-lab-line bg-lab-panel ${timelineOpen ? 'h-[220px]' : ''}`}>
+      <section aria-labelledby="timeline-heading" className="shrink-0 border-t border-lab-line bg-lab-panel">
         <h2 id="timeline-heading">
           <button type="button" className="flex h-10 w-full items-center justify-between px-3 text-sm font-medium hover:bg-lab-canvas focus-visible:outline-offset-[-2px]" aria-expanded={timelineOpen} aria-controls="timeline-content" onClick={onToggleTimeline}>
             时序面板
             <ChevronDown size={16} className={timelineOpen ? 'rotate-180' : ''} aria-hidden="true" />
           </button>
         </h2>
-        <div id="timeline-content" hidden={!timelineOpen} className="px-3 py-4 text-xs text-lab-muted">
-          暂无时序数据
+        <div id="timeline-content" hidden={!timelineOpen}>
+          {timelineOpen && <PseudotimeDock key={umapResetVersion} />}
         </div>
       </section>
     </main>
