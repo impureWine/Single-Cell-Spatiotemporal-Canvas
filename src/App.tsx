@@ -3,14 +3,14 @@ import { useState } from 'react'
 import LeftToolbar from './components/layout/LeftToolbar'
 import MainWorkspace from './components/layout/MainWorkspace'
 import TopHeader from './components/layout/TopHeader'
+import { useCellStore } from './store/useCellStore'
 
 export default function App() {
   const [timelineOpen, setTimelineOpen] = useState(true)
-  const [umapResetVersion, setUmapResetVersion] = useState(0)
+  const umapResetVersion = useCellStore((state) => state.viewRevision)
 
   function resetWorkspace() {
     setTimelineOpen(true)
-    setUmapResetVersion((version) => version + 1)
   }
 
   return (

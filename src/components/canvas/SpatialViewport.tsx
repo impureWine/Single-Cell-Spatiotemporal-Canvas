@@ -7,6 +7,7 @@ import { useCellStore } from '../../store/useCellStore'
 import type { CellCluster, CellRecord } from '../../types/cell'
 import { getClusterColor, getGeneExpressionColor } from '../../utils/colorScale'
 import BrushOverlay from './BrushOverlay'
+import { fitView } from '../../utils/fitView'
 
 const PAN_VIEW = new OrthographicView({ id: 'spatial', flipY: false, controller: { inertia: 180 } })
 const BRUSH_VIEW = PAN_VIEW.clone({ controller: false })
@@ -84,12 +85,8 @@ export default function SpatialViewport({ resetVersion }: { resetVersion: number
   const [{ width, height }, setSize] = useState({ width: 0, height: 0 })
   const [camera, setCamera] = useState<{ version: number; state: OrthographicViewState }>()
   const view = activeTool === 'pan' ? PAN_VIEW : BRUSH_VIEW
-  const viewState: OrthographicViewState = camera?.version === resetVersion ? camera.state : {
-    target: [0, 0, 0],
-    zoom: Math.log2(Math.max(1, Math.min((width - 44) / 19, (height - 90) / 13))),
-    minZoom: -1,
-    maxZoom: 9,
-  }
+  const fitted = useMemo(() => fitView(cells, width, height, true), [cells, width, height])
+  const viewState: OrthographicViewState = camera?.version === resetVersion ? camera.state : fitted
   const viewport = view.makeViewport({ width, height, viewState })
 
   useEffect(() => {

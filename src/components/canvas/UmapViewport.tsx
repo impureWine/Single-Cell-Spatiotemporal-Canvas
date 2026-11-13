@@ -8,6 +8,7 @@ import type { CellCluster, CellRecord, ColorByMode } from '../../types/cell'
 import { getClusterColor, getGeneExpressionColor, getPseudotimeColor } from '../../utils/colorScale'
 import VelocityCanvas from './VelocityCanvas'
 import BrushOverlay from './BrushOverlay'
+import { fitView } from '../../utils/fitView'
 
 const GENES = ['Sox9', 'Neurog3', 'Ins1', 'Gcg'] as const
 const COLOR_MODES = ['pseudotime', 'cluster', ...GENES] as const
@@ -124,12 +125,9 @@ export default function UmapViewport({ resetVersion }: { resetVersion: number })
 
   const stacked = width < 540
   const viewState = useMemo<OrthographicViewState>(() => camera?.version === resetVersion ? camera.state : {
-    target: [0, 0, 0],
-    zoom: Math.log2(Math.max(1, Math.min((width - 48) / 17, (height - (stacked ? 250 : 190)) / 11))),
+    ...fitView(cells, width, height, false),
     padding: stacked ? { bottom: 36 } : undefined,
-    minZoom: -1,
-    maxZoom: 9,
-  }, [camera, height, resetVersion, stacked, width])
+  }, [camera, cells, height, resetVersion, stacked, width])
   const view = activeTool === 'pan' ? VIEW : BRUSH_VIEW
   const brushViewport = activeTool === 'pan' ? null : view.makeViewport({ width, height, viewState })
 
